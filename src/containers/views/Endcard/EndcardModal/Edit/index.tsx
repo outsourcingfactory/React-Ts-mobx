@@ -30,6 +30,12 @@ class VcTable extends ComponentExt<TableProps> {
         scroll={{ y: scrollY }}
       >
         <Table.Column<IEndcardStore.IEndcard>
+          key="id"
+          title="ID"
+          dataIndex="id"
+          width={200}
+        />
+        <Table.Column<IEndcardStore.IEndcard>
           key="endcard_name"
           title="Endcard Name"
           dataIndex="endcard_name"
@@ -76,10 +82,20 @@ class VcTable extends ComponentExt<TableProps> {
               <a href="javascript:;" onClick={() => onEdit(index)}>
                 <Icon type="form" />
               </a>
-              <Divider key='Divider1' type="vertical" />
-              <a href="javascript:;" onClick={() => onCopy(index)}>
-                <Icon type="copy" />
-              </a>
+
+
+              {
+                this.$checkAuth('Offers-Endcards-Endcard-Add', (
+                  <React.Fragment>
+                    <Divider key='Divider1' type="vertical" />
+
+                    <a href="javascript:;" onClick={() => onCopy(index)}>
+                      <Icon type="copy" />
+                    </a>
+                  </React.Fragment>
+
+                ))
+              }
             </span>
           )}
         />
@@ -245,8 +261,11 @@ class PID extends ComponentExt<IStoreProps> {
           </div>
           {
             this.isTable ? <div className="tableBox">
-              <Button type="primary" className={style.addbtn} onClick={() => this.editPid()}>+ Add</Button>
-
+              {
+                this.$checkAuth('Offers-Endcards-Endcard-Add', (
+                  <Button type="primary" className={style.addbtn} onClick={() => this.editPid()}>+ Add</Button>
+                ))
+              }
               <VcTable data={this.thisDataList} onEdit={this.editPid} onCopy={this.onCopy} />
               <div className={style.btnGroup}>
                 {/* <Button type="primary" className={style.submitBtn} onClick={this.submit}>Submit</Button> */}
@@ -258,6 +277,7 @@ class PID extends ComponentExt<IStoreProps> {
                   onOk={this.onOK}
                   endcardId={this.GJB.id}
                   app_key={this.app_key}
+                  platform={this.targetEndcard.platform}
                   endcard={this.GJB} />
               </div>
           }

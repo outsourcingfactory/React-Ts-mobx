@@ -5,6 +5,7 @@ import { Form, Input, Select, Row, Col, Button } from 'antd'
 import { FormComponentProps } from 'antd/lib/form'
 import { platformOption, statusOption } from '../web.config'
 import { ComponentExt } from '@utils/reactExt'
+import * as styles from './index.scss'
 
 const FormItem = Form.Item
 
@@ -84,10 +85,10 @@ class CurrencySearch extends ComponentExt<IStoreProps & FormComponentProps> {
       <Form {...layout} >
         <Row>
           <Col span={span}>
-            <FormItem label="App ID">
+            <FormItem label="App ID" className={styles.searchInput}>
               {getFieldDecorator('app_id', {
                 initialValue: filters.app_id
-              })(<Input />)}
+              })(<Input autoComplete="off" />)}
             </FormItem>
           </Col>
           <Col span={span}>

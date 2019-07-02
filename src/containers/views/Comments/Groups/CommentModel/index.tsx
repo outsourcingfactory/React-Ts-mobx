@@ -6,7 +6,6 @@ import { FormComponentProps } from 'antd/lib/form'
 import { ComponentExt } from '@utils/reactExt'
 import * as styles from './index.scss'
 import * as web from '../web.config'
-import { async } from 'q';
 // 封装表单域组件
 const FormItem = Form.Item
 
@@ -28,13 +27,13 @@ const tableWidth = {
     },
     wrapperCol: {
         lg: { span: 15 }
-    } 
+    }
 }
 const formItemLayoutForModel = {
     labelCol: {
         xs: { span: 24 },
         sm: { span: 5 },
-        lg: { span: 10},
+        lg: { span: 10 },
     },
     wrapperCol: {
         xs: { span: 24 },
@@ -72,15 +71,26 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
     private loading: boolean = false
 
     @observable
-    private language: string[] = ['en'];
+    private language: string[] = [];
 
     @observable
-    private selectedRowKeys: number[] = this.props.comment ? this.props.comment.group_template_ids.split(',').map(ele=>Number(ele)) :[]
+    private selectedRowKeys: number[] = this.props.comment ? this.props.comment.group_template_ids.split(',').map(ele => Number(ele)) : []
 
     @observable
     private commentList: ICommentStore.IComment[] = []
-    
 
+    @computed
+    get useCommentList(): ICommentStore.IComment[] {
+        if (this.isAdd && this.commentList) {
+            return this.commentList.filter(ele => ele.status === 1)
+        } else if (this.commentList) {
+
+            const ids = this.props.comment ? this.props.comment.group_template_ids : ''
+            return this.commentList.filter(ele => ele.status === 1 || ids.includes(ele.id.toString())).sort((a, b) => {
+                return Number(ids.includes(b.id.toString())) - Number(ids.includes(a.id.toString()))
+            })
+        }
+    }
     @computed
     get formItemLayout() {
         return this.props.type ? formItemLayoutForModel : formItemLayout
@@ -93,7 +103,7 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
 
     @computed
     get buttonModalLayout() {
-        return this.props.type ?  'btnBox' : ''
+        return this.props.type ? 'btnBox' : ''
     }
     @action
     toggleLoading = () => {
@@ -101,28 +111,47 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
     }
 
     @action
-    getComments = async () => {
-        const res = await this.api.comment.getCommentTplList({})
+    getComments = async (val = 'en') => {
+        const res = await this.api.comment.selectTemplate({})
+        const ret = res.data[val]
         runInAction('SET_COMMENT', () => {
-            this.commentList = res.data
+            this.commentList = ret
         })
     }
 
     @action
-    rowSelection =() => {
+    getLanaugeDetail = async () => {
+        const res = await this.api.endcard.getlanguage()
+        runInAction('SET_LANGAUE', () => {
+            this.language = res.data
+        })
+    }
+
+    @action
+    rowSelection = () => {
         return {}
     }
     @action
-    languageChange = () => {
-
+    languageChange = (val) => {
+        this.getComments(val)
     }
+
+    @action
+    setClassName = (record, index) => {
+        return (record.status === 0 ? styles.disable : '')
+    }
+
     componentWillMount() {
-        this.getComments()
+
+        this.getLanaugeDetail()
         const { routerStore, comment = {} } = this.props
         const routerId = routerStore.location.pathname.toString().split('/').pop()
         const Id = Number(routerId)
         if ((!isNaN(Id) && (!comment.id || comment.id !== Id)) && !this.props.type) {
             routerStore.push('/comments/groups')
+        }
+        if (Id) {
+            this.getComments(this.props.comment.group_language)
         }
     }
     componentDidMount() {
@@ -160,7 +189,7 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
                             routerStore.push('/comments/groups')
                         }
                     } catch (err) {
-                        //console.log(err);
+                        console.log(err);
                     }
                     this.toggleLoading()
                 }
@@ -170,13 +199,13 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
 
     render() {
         const rowSelection = {
-            selectedRowKeys:this.selectedRowKeys,
+            selectedRowKeys: this.selectedRowKeys,
             onChange: (selectedRowKeys) => {
-                runInAction('SET_SELECT',()=>{
+                runInAction('SET_SELECT', () => {
                     this.selectedRowKeys = selectedRowKeys
                 })
                 this.props.form.setFieldsValue({
-                    group_template_ids:selectedRowKeys.join(',')
+                    group_template_ids: selectedRowKeys.join(',')
                 })
             }
         }
@@ -186,12 +215,12 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
             id = '',
             status = 1,
             group_name = '',
-            group_language = 'en',
+            group_language = '',
             group_template_ids = '',
         } = comment || {}
         return (
             <div className='sb-form'>
-                <Form className={styles.CompanyModal} {...this.formItemLayout} style={{paddingLeft: 0}}>
+                <Form className={styles.CompanyModal} {...this.formItemLayout} style={{ paddingLeft: 0 }}>
                     {!this.isAdd && <FormItem label="ID"  >
                         {getFieldDecorator('id', {
                             initialValue: id,
@@ -200,7 +229,7 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
                                     required: true, message: "Required"
                                 }
                             ]
-                        })(<Input />)}
+                        })(<Input autoComplete="off" />)}
                     </FormItem>
                     }
                     <FormItem label="Status"  >
@@ -228,7 +257,7 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
                                 required: true, message: "Required"
                             }
                             ]
-                        })(<Input />)}
+                        })(<Input autoComplete="off" />)}
                     </FormItem>
                     <FormItem label="Group Language" >
                         {getFieldDecorator('group_language', {
@@ -244,12 +273,11 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
                             filterOption={(input, option) => option.props.children.toString().toLowerCase().indexOf(input.toLowerCase()) >= 0}
                         >
                             {
-                                this.language.map(c => {
-                                    <Select.Option key={c} value={c}>
-                                        console.log({c})
+                                this.language && this.language.map((c, index) => (
+                                    <Select.Option key={index} value={c}>
                                         {c}
                                     </Select.Option>
-                                })
+                                ))
                             }
                         </Select>)}
                     </FormItem>
@@ -261,34 +289,35 @@ class CommentModal extends ComponentExt<IProps & FormComponentProps> {
                                     required: true, message: "Required"
                                 }
                             ],
-                        })(<Input disabled={true} />)}
+                        })(<Input autoComplete="off" disabled={true} />)}
                     </FormItem>
                     <FormItem className={styles.tableBox} {...tableWidth}>
-                        <div>
+                        <div className={styles.tableContainer}>
                             <Table<ICommentStore.IComment>
                                 className="center-table"
                                 style={{ width: '100%' }}
                                 bordered
                                 rowKey="id"
                                 rowSelection={rowSelection}
+                                rowClassName={this.setClassName}
                                 showHeader={false}
                                 pagination={false}
-                                dataSource={this.commentList}
+                                dataSource={this.useCommentList}
                             >
                                 <Table.Column<ICommentStore.IComment> key="id" title="ID" dataIndex="id" width={50} />
                                 <Table.Column<ICommentStore.IComment>
-                                    key="head_portrait" 
-                                    title="head_portrait" 
-                                    dataIndex="head_portrait" 
+                                    key="head_portrait"
+                                    title="head_portrait"
+                                    dataIndex="head_portrait"
                                     width={80}
-                                    render={(record) => <img src={record} alt="" width="40"  height="40" />} />
+                                    render={(record) => <img src={record} alt="" width="40" height="40" />} />
                                 <Table.Column<ICommentStore.IComment> key="com_name" title="com_name" dataIndex="com_name" width={80} />
                                 <Table.Column<ICommentStore.IComment> key="com_talk" title="com_talk" dataIndex="com_talk" width={200} />
                             </Table>
                         </div>
                     </FormItem>
-                    <FormItem className={this.props.type? styles.modalBtn :styles.btnBox} >
-                        <Button className={this.props.type? styles.btn : ''} type="primary" loading={this.loading} onClick={this.submit}>Submit</Button>
+                    <FormItem className={this.props.type ? styles.modalBtn : styles.btnBox} >
+                        <Button className={this.props.type ? styles.btn : ''} type="primary" loading={this.loading} onClick={this.submit}>Submit</Button>
                     </FormItem>
                 </Form>
             </div>

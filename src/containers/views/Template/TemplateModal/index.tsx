@@ -227,7 +227,7 @@ class TemplateModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input disabled={!this.typeIsAdd} />)}
+                            })(<Input autoComplete="off" disabled={!this.typeIsAdd} />)}
                         </FormItem> : null
                     }
                     {
@@ -239,7 +239,7 @@ class TemplateModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input />)}
+                            })(<Input autoComplete="off" />)}
                         </FormItem> : null
                     }
                     {

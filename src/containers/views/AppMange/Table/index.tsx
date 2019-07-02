@@ -38,7 +38,7 @@ interface IProps extends IStoreProps {
             total,
             setAppManage
         } = appManageStore
-        return { routerStore, setAppManage,appManage, getAppManageLoading, getAppManageList, appManageList, handleTableChange, page, pageSize, total }
+        return { routerStore, setAppManage, appManage, getAppManageLoading, getAppManageList, appManageList, handleTableChange, page, pageSize, total }
     }
 )
 @observer
@@ -87,26 +87,27 @@ class AppsManageTable extends ComponentExt<IProps> {
                 }}
                 onChange={handleTableChange}
             >
-                <Table.Column<IAppManageStore.IAppMange> key="app_key" title="Appkey" dataIndex="app_key" width={200} />
-                <Table.Column<IAppManageStore.IAppMange> key="title" title="App Name" dataIndex="title" width={200} />
-                <Table.Column<IAppManageStore.IAppMange> key="app_id" title="App ID" dataIndex="app_id" width={200} />
+                <Table.Column<IAppManageStore.IAppMange> key="app_key" title="Appkey" dataIndex="app_key" width={100} />
+                <Table.Column<IAppManageStore.IAppMange> key="title" title="App Name" dataIndex="title" />
+                <Table.Column<IAppManageStore.IAppMange> key="app_id" title="App ID" dataIndex="app_id" />
                 <Table.Column<IAppManageStore.IAppMange> key="platform" title="Platform" dataIndex="platform" width={100} />
-                <Table.Column<IAppManageStore.IAppMange> key="category_name" title="Category" dataIndex="category_name" width={200} />
-                <Table.Column<IAppManageStore.IAppMange> key="screen_type" title="Screen type" dataIndex="screen_type" width={200} />
-                <Table.Column<IAppManageStore.IAppMange> key="downloads" title="Downloads" dataIndex="downloads" width={200} />
-                <Table.Column<IAppManageStore.IAppMange> key="status" title="Status" dataIndex="status" width={200} />
+                <Table.Column<IAppManageStore.IAppMange> key="category_name" title="Category" dataIndex="category_name" width={120} />
+                <Table.Column<IAppManageStore.IAppMange> key="screen_type" title="Screen type" dataIndex="screen_type" width={100} />
+                <Table.Column<IAppManageStore.IAppMange> key="rating" title="Rate" dataIndex="rating" width={100} />
+                <Table.Column<IAppManageStore.IAppMange> key="downloads" title="Downloads" dataIndex="downloads" width={100} />
+                <Table.Column<IAppManageStore.IAppMange> key="status" title="Status" dataIndex="status" width={100} />
                 <Table.Column<IAppManageStore.IAppMange>
                     key="action"
                     title="Operate"
-                    width={120}
+                    width={100}
                     render={(_, record) => (
                         <span>
                             {
-                                // this.$checkAuth('Apps-Virtual Endcard-Add', [
-                                (<a key='form' href="javascript:;" onClick={() => this.modifyEndcard(record)}>
-                                    <Icon type="form" />
-                                </a>)
-                                // ])
+                                this.$checkAuth('Offers-Apps Manage-Edit', [
+                                    (<a key='form' href="javascript:;" onClick={() => this.modifyEndcard(record)}>
+                                        <Icon type="form" />
+                                    </a>)
+                                ])
                             }
                         </span>
                     )}

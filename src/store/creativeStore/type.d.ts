@@ -15,14 +15,16 @@ export interface ICreative {
     creative_name?: string
     language?: string
     version?: string
-    offer_id?: number
+    order_id?: number | string
+    creative_type?: string
+    video_type?: number
+    videoUrl?: string
+    lead_is_show_content?: number
+    lead_content_id?: number
     creative_icon_url?: string
     description?: string
     if_show_comment?: string
-    creative_type?: string
     ige_prefail?: number
-    videoUrl?: string
-    video_type?: number
     videoUrl?: string
     leadVideoUrl?: string
     ige_portrait_offline_url?: string | number
@@ -31,17 +33,17 @@ export interface ICreative {
     ige_landscape_video_cover_url?: string | number
     ige_pkgname?: string | number
     ige_leadvideo_flag?: string | number
-    appwall_description?: string | number
+    desc?: string | number
     ige_recoverlist_opps?: string | number
     ige_recoverlist_re_en?: string | number
     ige_switch_scene?: string | number
     playback_time?: number
     long_play_time?: string | number
-
+    title?: string
     ige_landscape_video_cover_url?: string | number
     ige_pkgname?: string | number
     ige_leadvideo_flag?: string | number
-    appwall_description?: string | number
+    desc?: string | number
     ige_recoverlist_opps?: string | number
     ige_recoverlist_re_en?: string | number
     ige_switch_scene?: string | number
@@ -79,4 +81,10 @@ export interface OptionListDb {
         id?: string | number
         creative_name: string
     })[],
+    LeadContents?: {
+        [propName: string]: ({
+            name?: string
+            id?: number
+        })[]
+    }
 }

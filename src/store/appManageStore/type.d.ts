@@ -18,10 +18,10 @@ export interface IAppMange {
     title?: string
     rating?: string
     downloads?: number | string
-    category_id?: string
-    frame_id?: string
-    specs_id?: string
-    style_id?: string,
+    category_id?: number
+    frame_id?: number
+    specs_id?: number
+    style_id?: number,
     
 }
 
@@ -46,6 +46,5 @@ export interface OptionListDb {
     Category?: any[],
     Frame?: any[],
     Spec?: any[],
-    Style?: any[],
-    Account?: any[]
+    Style?: any[]
 }

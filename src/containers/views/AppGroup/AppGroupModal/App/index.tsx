@@ -224,7 +224,6 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
 
     componentWillMount() {
         this.props.getOptionListDb(this.props.Id)
-        console.log(this.props.Id)
         if (this.props.Id) {
             this.getDetail()
         }
@@ -286,6 +285,7 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
             category = undefined,
             frame = undefined,
             style = undefined,
+            bundle_id = '',
             screen_type = 0,
             apply_screen_type = 0,
             account_id = undefined,
@@ -378,28 +378,41 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
                                 </Radio.Group>
                             )}
                         </FormItem>
-                        <FormItem label={!this.useNot_in_appstore && this.usePlatform === 'ios' ? 'Bundle Id' : "Pkg Name"}>
-                            {getFieldDecorator('pkg_name', {
-                                initialValue: pkg_name,
-                                // validateTrigger: 'onBlur',
-                                rules: [
-                                    {
-                                        required: true, message: "Required",
-                                    },
-                                    // {
-                                    //     validator: (r, v, callback) => {
-                                    //         const reg = this.usePlatform === 'android' ? /^com./ : /^[0-9]*$/
-                                    //         if (!reg.test(v)) {
-                                    //             const msg = this.usePlatform === 'android'
-                                    //             callback('Pkgname for android /Ios platform should start with com.xxx/number!')
-                                    //         }
-                                    //         callback()
-                                    //     }
-                                    // }
-                                ]
-                                //  disabled={!this.useNot_in_appstore || (!this.isAdd && !!pkg_name)}
-                            })(<Input disabled={!this.isAdd && !!pkg_name} />)}
-                        </FormItem>
+                        {
+                            !this.useNot_in_appstore && this.usePlatform === 'ios' ? <FormItem label='Bundle Id'>
+                                {getFieldDecorator('bundle_id', {
+                                    initialValue: bundle_id,
+                                    // validateTrigger: 'onBlur',
+                                    rules: [
+                                        {
+                                            required: true, message: "Required",
+                                        },
+                                    ]
+                                })(<Input autoComplete="off" disabled={!this.isAdd && !!bundle_id} />)}
+                            </FormItem> : <FormItem label="Pkg Name">
+                                    {getFieldDecorator('pkg_name', {
+                                        initialValue: pkg_name,
+                                        // validateTrigger: 'onBlur',
+                                        rules: [
+                                            {
+                                                required: true, message: "Required",
+                                            },
+                                            // {
+                                            //     validator: (r, v, callback) => {
+                                            //         const reg = this.usePlatform === 'android' ? /^com./ : /^[0-9]*$/
+                                            //         if (!reg.test(v)) {
+                                            //             const msg = this.usePlatform === 'android'
+                                            //             callback('Pkgname for android /Ios platform should start with com.xxx/number!')
+                                            //         }
+                                            //         callback()
+                                            //     }
+                                            // }
+                                        ]
+                                        //  disabled={!this.useNot_in_appstore || (!this.isAdd && !!pkg_name)}
+                                    })(<Input autoComplete="off" disabled={!this.isAdd && !!pkg_name} />)}
+                                </FormItem>
+                        }
+
 
                         <FormItem label="App Name">
                             {getFieldDecorator('app_name', {
@@ -409,7 +422,7 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input />)}
+                            })(<Input autoComplete="off" />)}
                             <Popover content={(<p>Enter a temporary app name if the app is not in the app store.</p>)}>
                                 <AntIcon className={styles.workBtn} type="question-circle" />
                             </Popover>
@@ -679,7 +692,7 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
                                             required: true, message: "Required",
                                         },
                                     ]
-                                })(<Input />)}
+                                })(<Input autoComplete="off" />)}
                             </FormItem>
                             {
                                 this.usePidType && <React.Fragment>
@@ -691,7 +704,7 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
                                                     required: true, message: "Required",
                                                 },
                                             ]
-                                        })(<Input />)}
+                                        })(<Input autoComplete="off" />)}
                                     </FormItem>
 
                                     <FormItem label="GEO">
@@ -726,7 +739,7 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
                                                     required: true, message: "Required",
                                                 },
                                             ]
-                                        })(<Input />)}
+                                        })(<Input autoComplete="off" />)}
                                     </FormItem>
                                 </React.Fragment>
 
@@ -744,7 +757,7 @@ class AppGroupModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required",
                                     },
                                 ]
-                            })(<Input disabled={!this.isAdd} />)}
+                            })(<Input autoComplete="off" disabled={!this.isAdd} />)}
                         </FormItem>
 
 

@@ -32,14 +32,14 @@ class VcTable extends ComponentExt<TableProps> {
         <Table.Column<ICreativeStore.ICreative>
           key="id"
           title="ID"
-          dataIndex="creative_name"
-          width={200}
+          dataIndex="id"
+          width={100}
         />
         <Table.Column<ICreativeStore.ICreative>
           key="creative_type"
           title="Creative Type"
           dataIndex="creative_type"
-          width={200}
+          width={100}
         />
         <Table.Column<ICreativeStore.ICreative>
           key="creative_name"
@@ -58,13 +58,16 @@ class VcTable extends ComponentExt<TableProps> {
           key="language"
           title="Creative Language"
           dataIndex="language"
-          width={200} />
+          width={100} />
 
         <Table.Column<ICreativeStore.ICreative>
           key="status"
           title="Status"
           dataIndex="status"
-          width={200} />
+          render={(_) => (
+            statusOption.find(item => item.value === _).key
+          )}
+          width={100} />
 
         <Table.Column<ICreativeStore.ICreative>
           key="action"
@@ -75,10 +78,18 @@ class VcTable extends ComponentExt<TableProps> {
               <a href="javascript:;" onClick={() => onEdit(index)}>
                 <Icon type="form" />
               </a>
-              <Divider key='Divider1' type="vertical" />
-              <a href="javascript:;" onClick={() => onCopy(index)}>
-                <Icon type="copy" />
-              </a>
+              {
+                this.$checkAuth('Offers-Creatives-Creatives-Add', (
+                  <React.Fragment>
+                    <Divider key='Divider1' type="vertical" />
+
+                    <a href="javascript:;" onClick={() => onCopy(index)}>
+                      <Icon type="copy" />
+                    </a>
+                  </React.Fragment>
+                ))
+              }
+
             </span>
           )}
         />
@@ -244,8 +255,11 @@ class PID extends ComponentExt<IStoreProps> {
           </div>
           {
             this.isTable ? <div className="tableBox">
-              <Button type="primary" className={style.addbtn} onClick={() => this.editPid()}>+ Add</Button>
-
+              {
+                this.$checkAuth('Offers-Creatives-Creatives-Add', (
+                  <Button type="primary" className={style.addbtn} onClick={() => this.editPid()}>+ Add</Button>
+                ))
+              }
               <VcTable data={this.thisDataList} onEdit={this.editPid} onCopy={this.onCopy} />
               {/* <div className={style.btnGroup}> */}
               {/* <Button type="primary" className={style.submitBtn} onClick={this.submit}>Submit</Button> */}
@@ -257,6 +271,7 @@ class PID extends ComponentExt<IStoreProps> {
                   onOk={this.onOK}
                   creativeId={this.GJB.id}
                   app_key={this.app_key}
+                  platform={this.targetCreative.platform}
                   creative={this.GJB} />
               </div>
           }

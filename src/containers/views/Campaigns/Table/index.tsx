@@ -50,11 +50,11 @@ class CampaignsTable extends ComponentExt<IProps> {
     @action
     modifyComment = (campaign: ICampaignStore.ICampainginForList, type?) => {
         this.props.setCampaingn(campaign)
-        const { 
+        const {
             app_id,
             platform,
             app_key
-         } = campaign
+        } = campaign
         localStorage.setItem('TargetCampaign', JSON.stringify({
             app_id,
             platform,
@@ -95,7 +95,7 @@ class CampaignsTable extends ComponentExt<IProps> {
                     className="center-table"
                     style={{ width: '100%' }}
                     bordered
-                    rowKey="record_id"
+                    rowKey="app_key"
                     loading={getCampaignsLoading}
                     dataSource={campaigns}
                     scroll={{ y: scrollY }}
@@ -117,7 +117,7 @@ class CampaignsTable extends ComponentExt<IProps> {
                         render={(_, record) => (
                             <span>
                                 {
-                                    this.$checkAuth('Authorization-User Manage-Edit', [
+                                    this.$checkAuth('Offers-Campaigns-Edit', [
                                         (<a key='form' href="javascript:;" onClick={() => this.modifyComment(record)}>
                                             <Icon type="form" />
                                         </a>)

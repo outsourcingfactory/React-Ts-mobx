@@ -78,6 +78,12 @@ class CommentTable extends ComponentExt<IProps> {
         const style = {
             marginLeft: '10px'
         }
+        const styles = {
+            maxWidth: '130px',
+            height: 'auto',
+            wordWrap: 'break-world',
+            wordBreak: 'break-all'
+        }
         const {
             scrollY,
             getcommentsLoading,
@@ -93,7 +99,7 @@ class CommentTable extends ComponentExt<IProps> {
                     className="center-table"
                     style={{ width: '100%' }}
                     bordered
-                    rowKey="group_id"
+                    rowKey="id"
                     loading={getcommentsLoading}
                     dataSource={comments}
                     scroll={{ y: scrollY }}
@@ -112,25 +118,25 @@ class CommentTable extends ComponentExt<IProps> {
                         title="Group Language"
                         dataIndex="group_language"
                         width={100}
-                     />
-                    <Table.Column<ICommentGroupStore.IGroup> 
-                        key="comments" 
-                        title="Comment Template ID" 
-                        dataIndex="comments" 
+                    />
+                    <Table.Column<ICommentGroupStore.IGroup>
+                        key="comments"
+                        title="Comment Template ID"
+                        dataIndex="comments"
                         width={200}
                         render={(_, record) => (
                             <span>
                                 {
-                                   record.comments.map((c, index) => (
+                                    record.comments && record.comments.map((c, index) => (
                                         <Popover
                                             placement="top"
                                             trigger="hover"
                                             key={index}
-                                            content={c.comment}
-                                            >
-                                                <a href="javascript:;" style={style} key={index}>{FormatNumber(c.id)}</a>
+                                            content={<p style={styles}>{c.comment}</p>}
+                                        >
+                                            <a href="javascript:;" style={style} key={index}>{FormatNumber(c.id)}</a>
                                         </Popover>
-                                   )) 
+                                    ))
                                 }
                             </span>
                         )}
@@ -151,7 +157,7 @@ class CommentTable extends ComponentExt<IProps> {
                         render={(_, record) => (
                             <span>
                                 {
-                                    this.$checkAuth('Authorization-User Manage-Edit', [
+                                    this.$checkAuth('Offers-Comments-Comment Groups-Edit', [
                                         (<a key='form' href="javascript:;" onClick={() => this.modifyComment(record)}>
                                             <Icon type="form" />
                                         </a>)

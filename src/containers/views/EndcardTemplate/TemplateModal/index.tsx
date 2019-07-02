@@ -116,6 +116,9 @@ class EndcardTemplateModal extends ComponentExt<IProps & FormComponentProps> {
         this.props.onCancel()
         this.toggleLoading(false)
         this.props.form.resetFields()
+        runInAction('clear_Image', () => {
+            this.fileTarget = {};
+        })
     }
 
     @action
@@ -140,7 +143,8 @@ class EndcardTemplateModal extends ComponentExt<IProps & FormComponentProps> {
                 const houz = file.name.split('.').pop()
                 const isHtml = type.includes(houz)
                 if (!isHtml) {
-                    message.error(`The Endcard template file should be a  ${type}`);
+                    const msg = type === '.zip' ? `The Endcard template file should be a  ${type}` : 'Please upload the file in png/jpg format'
+                    message.error(msg);
                 }
                 let isLt2M = !size || file.size / 1024 < size;
                 if (!isLt2M) {
@@ -161,12 +165,12 @@ class EndcardTemplateModal extends ComponentExt<IProps & FormComponentProps> {
                                 const width = imageCopy.width
                                 const height = imageCopy.height
                                 console.log(width, height)
-                                if ((width === 300 && height === 167) || (width === 167 && height === 300)) {
-                                    this.template_type = Number(width === 167 && height === 300) + 1
+                                if ((width === 300 && height === 167) || (width === 168 && height === 293)) {
+                                    this.template_type = Number(width === 168 && height === 293) + 1
                                     resolve()
                                 } else {
                                     this.template_type = undefined
-                                    message.error('Please upload image at 300*167px or 167*300px!')
+                                    message.error('Please upload image at 300*167px or 168*293px!')
                                     reject()
                                 }
                             }
@@ -189,7 +193,7 @@ class EndcardTemplateModal extends ComponentExt<IProps & FormComponentProps> {
                         [key]: data.url
                     })
                     runInAction('set_File', () => {
-                        this.fileTarget[key] = data.name
+                        this.fileTarget[key] = file.name
                     })
                     cb && cb(data)
                 }, errorCb).catch(errorCb)
@@ -206,26 +210,23 @@ class EndcardTemplateModal extends ComponentExt<IProps & FormComponentProps> {
             template_image = '',
             status = 1
         } = endcardTemplate || {}
-        const imageProps = this.getUploadprops(this.api.util.uploadTemplateImage, 'template_image', '.png, .jpg', 1500, undefined, true)
+        const imageProps = this.getUploadprops(this.api.util.uploadTemplateImage, 'template_image', '.png, .jpg', 15, undefined, true)
         const templateProps = this.getUploadprops(this.api.util.uploadTemplate, 'template_url', '.zip', undefined, (data) => {
             this.md5 = data.md5
         })
         const urlName = this.fileTarget['template_url'] !== undefined ? this.fileTarget['template_url'] : (template_url || '').split('/').pop();
         const imageName = this.fileTarget['template_image'] !== undefined ? this.fileTarget['template_image'] : (template_image || '').split('/').pop();
-
         return (
             <Modal
                 title={this.title}
                 visible={visible}
                 width={500}
                 onOk={this.submit}
-                destroyOnClose
                 onCancel={this.onCancel}
                 footer={
                     <Button type="primary" loading={this.loading} onClick={this.submit} >Submit</Button>
                 }
             >
-
 
                 <Form className={styles.templateModal}>
 
@@ -256,7 +257,8 @@ class EndcardTemplateModal extends ComponentExt<IProps & FormComponentProps> {
                                     required: true, message: 'Required'
                                 }
                             ]
-                        })(<Input disabled={!this.typeIsAdd} />)}
+                            // disabled={!this.typeIsAdd}
+                        })(<Input autoComplete="off" />)}
                     </FormItem>
 
                     <FormItem {...formItemLayout} label="Template">

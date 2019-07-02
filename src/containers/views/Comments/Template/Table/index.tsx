@@ -20,6 +20,7 @@ interface IStoreProps {
     pageSize?: number
     total?: number
     routerStore?: RouterStore
+    setBreadcrumbArr?: (menus?: IGlobalStore.menu[]) => void
 }
 
 interface IProps extends IStoreProps {
@@ -28,7 +29,8 @@ interface IProps extends IStoreProps {
 
 @inject(
     (store: IStore): IStoreProps => {
-        const { routerStore, commentStore } = store
+        const { routerStore, commentStore, globalStore } = store
+        const { setBreadcrumbArr } = globalStore
         const {
             getcommentsLoading,
             setComment,
@@ -40,7 +42,7 @@ interface IProps extends IStoreProps {
             setCommentType,
             total
         } = commentStore
-        return { routerStore, getcommentsLoading, setComment, getCommentTplList, comments, handleTableChange, page, pageSize, setCommentType, total }
+        return { routerStore, setBreadcrumbArr, getcommentsLoading, setComment, getCommentTplList, comments, handleTableChange, page, pageSize, setCommentType, total }
     }
 )
 @observer
@@ -52,8 +54,26 @@ class CommentTable extends ComponentExt<IProps> {
     @action
     modifyComment = (comment: ICommentStore.IComment) => {
         this.props.setComment(comment)
+        this.resetBread(comment)
         this.props.routerStore.replace(`/comments/template/edit/${comment.id}`)
     }
+
+    @action
+    resetBread = (comment: ICommentStore.IComment) => {
+        let arr = [
+            {
+                title: 'Comment Tempaltes',
+                path: "/comments/template"
+            }
+        ] as IGlobalStore.menu[]
+        arr.push({
+            title: `Edit ${comment.com_name}`,
+            path: `/comments/template/edit/${comment.id}`
+        })
+
+        this.props.setBreadcrumbArr(arr)
+    }
+
     // 去请求数据
     componentDidMount() {
         const companyType = this.props.routerStore.location.pathname.includes('source') ? 'source' : 'subsite'
@@ -64,7 +84,9 @@ class CommentTable extends ComponentExt<IProps> {
         }
         this.props.setCommentType(companyType)
     }
-
+    componentWillUnmount() {
+        this.props.setBreadcrumbArr()
+    }
     render() {
         const {
             scrollY,
@@ -81,7 +103,7 @@ class CommentTable extends ComponentExt<IProps> {
                     className="center-table"
                     style={{ width: '100%' }}
                     bordered
-                    rowKey="comment_id"
+                    rowKey="id"
                     loading={getcommentsLoading}
                     dataSource={comments}
                     scroll={{ y: scrollY }}
@@ -101,7 +123,7 @@ class CommentTable extends ComponentExt<IProps> {
                         title="Head Portrait"
                         dataIndex="head_portrait"
                         width={150}
-                        render={(record) => <img src={record} alt="" width="40"  height="40" />}
+                        render={(record) => <img src={record} alt="" width="40" height="40" />}
                     />
                     <Table.Column<ICommentStore.IComment> key="com_name" title="Comment Name" dataIndex="com_name" width={150} />
                     <Table.Column<ICommentStore.IComment> key="com_talk" title="Comment Talk" className={styles.longText} dataIndex="com_talk" width={330} />
@@ -121,7 +143,7 @@ class CommentTable extends ComponentExt<IProps> {
                         render={(_, record) => (
                             <span>
                                 {
-                                    this.$checkAuth('Authorization-User Manage-Edit', [
+                                    this.$checkAuth('Offers-Comments-Comment Templates-Edit', [
                                         (<a key='form' href="javascript:;" onClick={() => this.modifyComment(record)}>
                                             <Icon type="form" />
                                         </a>)

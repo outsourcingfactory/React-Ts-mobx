@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { inject, observer } from 'mobx-react'
 import { observable, action, computed, runInAction } from 'mobx'
-import { Form, Input, Select, Radio, Button, message, Popover, Icon as AntIcon, Upload } from 'antd'
+import { Form, Input, Select, Radio, Button, message, Modal, Popover, Icon as AntIcon, Upload } from 'antd'
 import { FormComponentProps } from 'antd/lib/form'
 import { statusOption, platformOption, screenOption } from '../web.config'
 import { ComponentExt } from '@utils/reactExt'
@@ -41,7 +41,6 @@ interface IStoreProps {
     optionListDb?: IAppManageStore.OptionListDb
     appManage?: IAppManageStore.IAppMange
     getOptionListDb?: (id: number) => Promise<any>
-    getAccount?: () => Promise<any>
     createAppManage?: (appManage: IAppManageStore.IAppMange) => Promise<any>
     modifyAppManage?: (appManage: IAppManageStore.IAppMange) => Promise<any>
     setAppManage?: (Apps: IAppManageStore.IAppMange) => void
@@ -56,8 +55,8 @@ interface IProps extends IStoreProps {
 @inject(
     (store: IStore): IProps => {
         const { appManageStore, routerStore } = store
-        const { createAppManage, modifyAppManage, getAccount, getOptionListDb, optionListDb, setAppManage, appManage } = appManageStore
-        return { routerStore, createAppManage, modifyAppManage, getOptionListDb, optionListDb, getAccount, setAppManage, appManage }
+        const { createAppManage, modifyAppManage, getOptionListDb, optionListDb, setAppManage, appManage } = appManageStore
+        return { routerStore, createAppManage, modifyAppManage, getOptionListDb, optionListDb, setAppManage, appManage }
     }
 )
 @observer
@@ -67,6 +66,9 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
 
     @observable
     private platform: boolean = false
+
+    @observable
+    private Account: ({ name?: string, id?: number })[] = []
 
     @observable
     private manageGroup: IAppManageStore.IAppMange = {}
@@ -110,11 +112,33 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
     }
 
     @action
+    switchNumber = (obj, target = {}) => {
+        const keys = Object.keys(obj)
+        keys.forEach(() => {
+            target['category_id'] = Number(obj['category_id'])
+            target['frame_id'] = Number(obj['frame_id'])
+            target['style_id'] = Number(obj['style_id'])
+            target['specs_id'] = Number(obj['specs_id'])
+        })
+        return target
+    }
+
+    @action
     getDetail = async () => {
+        const target = {}
         const res = await this.api.appsManage.modifyAppsManageInfo({ app_key: this.Id })
+        const ret = Object.assign({}, res.data, this.switchNumber(res.data, target))
         this.props.setAppManage(res.data)
         runInAction('SET_APPManage', () => {
-            this.manageGroup = { ...res.data }
+            this.manageGroup = ret
+        })
+    }
+
+    @action
+    getSourceAccount = async () => {
+        const res = await this.api.appGroup.getAccountSource()
+        runInAction('SET_SOURCE', () => {
+            this.Account = res.data;
         })
     }
 
@@ -133,7 +157,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
     }
 
     companyModelOk = async (id: number) => {
-        await this.props.getAccount()
+        await this.getSourceAccount()
         this.props.form.setFieldsValue({// 重新赋值
             account_id: id
         })
@@ -150,7 +174,29 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
             appstore_url: this.props.form.getFieldValue('appstore_url')
         })
         runInAction('SET_APPGP', () => {
-            this.manageStore = { ...res.data }
+            this.manageStore = {
+                ...res.data,
+                // category_id: (this.props.optionListDb.Category.find(ele => ele.name === res.data.category_id) || {}).id
+            }
+        })
+    }
+
+    showModel = (values, cb, routerStore) => {
+        Modal.confirm({
+            title: 'Do you Want to change status enable to disable?',
+            okText: 'YES',
+            content: 'The status of the app is modified to disable, all campaigns under this app will be suspended',
+            onOk() {
+                cb(values).then(res => {
+                    if (res.errorcode === 0) {
+                        message.success(res.message)
+                        routerStore.push('/offer')
+                    }
+                })
+            },
+            onCancel() {
+                console.log('Cancel');
+            }
         })
     }
 
@@ -158,7 +204,9 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
         if (e) {
             e.preventDefault()
         }
+
         const { routerStore, createAppManage, form, modifyAppManage, type } = this.props
+
         form.validateFields(
             async (err, values): Promise<any> => {
                 if (!err) {
@@ -173,14 +221,30 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                         values = { ...values }
                         if (this.isAdd) {
                             data = await createAppManage(values)
+                            message.success(data.message)
+                            routerStore.push('/offer')
                         } else {
-                            data = await modifyAppManage({ ...values })
+                            const cb = async () => {
+                                data = await modifyAppManage({ ...values })
+                                message.success(data.message)
+                                routerStore.push('/offer')
+                            }
+                            if ((this.manageGroup.status !== values.status) && values.status === 'suspend') {
+                                const resData = await this.api.appsManage.checkAppsStatus({ app_key: values.app_key.toString() })
+                                const checkData = resData.data
+                                if (checkData.errorcode !== 0) {
+                                    // this.showModel(values, modifyAppManage, routerStore)
+                                    this.$message.error('The status of the app is modified to disable, all campaigns under this app will be suspended')
+                                } else {
+                                    cb()
+                                }
+                            } else {
+                                cb()
+                            }
+
                         }
-                        message.success(data.message)
                         if (this.props.type) {
                             this.props.form.resetFields()
-                        } else {
-                            routerStore.push('/offer')
                         }
                     } catch (error) {
                         console.log(err)
@@ -206,6 +270,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
 
     componentWillMount() {
         this.runInit()
+        this.getSourceAccount()
         this.props.getOptionListDb(this.Id)
         if (this.Id) {
             this.getDetail()
@@ -224,7 +289,6 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
     }
 
     render() {
-
         const props = {
             showUploadList: false,
             accept: ".png, .jpg, .jpeg, .gif",
@@ -253,7 +317,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
         }
         const { form, optionListDb } = this.props
         const data = this.manageGroup
-        const reData = this.manageStore ? { data, ...this.manageGroup } : this.manageGroup
+        const reData = this.manageStore ? { ...data, ...this.manageStore } : data
         const { getFieldDecorator } = form
         const {
             platform = 'android',
@@ -261,16 +325,16 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
             app_key = '',
             title = "",
             appstore_url = '',
-            app_id = '',
-            account_id = '',
+            app_id = undefined,
+            account_id = undefined,
             screen_type = '0',
             logo = '',
             rating = '',
             downloads = '',
-            category_id = '',
-            frame_id = '2d',
-            specs_id = '',
-            style_id = 'Pixel'
+            category_id = undefined,
+            frame_id = 201,
+            specs_id = undefined,
+            style_id = 301
         } = reData || {}
         return (
             <React.Fragment>
@@ -352,7 +416,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input disabled={!this.isAdd} />)}<Button type="primary" onClick={this.getAppStoreInfo} className={styles.importBtn}>Import</Button>
+                            })(<Input autoComplete="off" disabled={!this.isAdd} />)}<Button type="primary" onClick={this.getAppStoreInfo} className={styles.importBtn}>Import</Button>
                         </FormItem>
 
                         <FormItem label="Logo">
@@ -364,7 +428,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                     }
                                 ]
                             })(
-                                <Upload {...props}>
+                                <Upload {...props} disabled={(!!this.manageStore.logo) || (!this.isAdd && !!logo)}>
                                     {this.logo || logo ? <img style={{ width: '100px' }} src={this.logo || logo} alt="avatar" /> : <AntIcon className={styles.workPlus} type='plus' />}
                                 </Upload>
                             )}
@@ -378,7 +442,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input disabled={!this.isAdd} />)}
+                            })(<Input autoComplete="off" disabled={!this.isAdd} />)}
                         </FormItem>
 
                         <FormItem label="App Name">
@@ -389,7 +453,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input disabled={!this.isAdd} />)}
+                            })(<Input autoComplete="off" disabled={!this.isAdd} />)}
                         </FormItem>
 
                         <FormItem label="Rate">
@@ -400,7 +464,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input />)}
+                            })(<Input autoComplete="off" />)}
                         </FormItem>
                         <FormItem label="Download">
                             {getFieldDecorator('downloads', {
@@ -410,7 +474,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                         required: true, message: "Required"
                                     }
                                 ]
-                            })(<Input />)}
+                            })(<Input autoComplete="off" />)}
                         </FormItem>
 
                         <FormItem label="Category">
@@ -423,6 +487,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                 ]
                             })(<Select
                                 showSearch
+                                // disabled={!this.isAdd}
                                 filterOption={(input, option) => option.props.children.toString().toLowerCase().indexOf(input.toLowerCase()) >= 0}
                             >
                                 {optionListDb.Category.map(c => (
@@ -460,14 +525,6 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                 rules: [
                                     {
                                         required: true, message: "Required",
-                                    },
-                                    {
-                                        validator: (r, v, callback) => {
-                                            if (v <= 0) {
-                                                callback('The Exchange Rate should be a positive integer!')
-                                            }
-                                            callback()
-                                        }
                                     }
                                 ]
                             })(<Select
@@ -533,7 +590,7 @@ class AppsManageModal extends ComponentExt<IProps & FormComponentProps> {
                                 showSearch
                                 filterOption={(input, option) => option.props.children.toString().toLowerCase().indexOf(input.toLowerCase()) >= 0}
                             >
-                                {optionListDb.Account.map(c => (
+                                {this.Account && this.Account.map(c => (
                                     <Select.Option key={c.id} value={c.id}>
                                         {c.name}
                                     </Select.Option>

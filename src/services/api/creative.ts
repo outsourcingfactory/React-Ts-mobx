@@ -24,7 +24,7 @@ export default {
   },
 
   checkCreative(data): Promise<any> {
-    return http.post(`${basePath}checkCreative`, data || {})
+    return http.post(`${basePath}checkCreative`, data, { useRes: true })
   },
 
   uploadVideo(data): Promise<any> {
@@ -47,4 +47,9 @@ export default {
   getlanguage(): Promise<any> {
     return http.post(`/api/endcard/language`)
   },
+
+  getLeadContents(): Promise<any> {
+    return http.post(`${basePath}getLeadContents`)
+  },
+
 }

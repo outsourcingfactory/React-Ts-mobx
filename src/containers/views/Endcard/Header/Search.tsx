@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { inject, observer } from 'mobx-react'
-import { observable, action } from 'mobx'
+import { observable, action, autorun } from 'mobx'
 import { Form, Input, Select, Row, Col, Button } from 'antd'
 import { FormComponentProps } from 'antd/lib/form'
 import { platformOption } from '@config/web'
@@ -18,18 +18,18 @@ const layout = {
   }
 }
 
-
 interface IStoreProps {
   changeFilter?: (params: IEndcardStore.SearchParams) => void
+  routerStore?: RouterStore
   filters?: IEndcardStore.SearchParams
 }
 
 
-
 @inject(
   (store: IStore): IStoreProps => {
+    const { routerStore } = store
     const { changeFilter, filters } = store.endcardStore
-    return { changeFilter, filters }
+    return { changeFilter, filters, routerStore }
   }
 )
 @observer
@@ -37,11 +37,37 @@ class EndcardSearch extends ComponentExt<IStoreProps & FormComponentProps> {
   @observable
   private loading: boolean = false
 
+  @observable
+  private IReactionDisposer: () => void
 
 
   @action
   toggleLoading = () => {
     this.loading = !this.loading
+  }
+
+  constructor(props) {
+    super(props)
+    this.IReactionDisposer = autorun(
+      () => {
+        this.props.routerStore.history.listen(route => {
+            this.props.form.resetFields()
+        })
+      }
+    )
+  }
+  componentWillMount() {
+    this.IReactionDisposer()
+    this.props.routerStore.history.listen(route => {
+      console.log('####')
+        this.props.form.resetFields()
+    })
+  }
+
+  componentDidMount() {
+    this.props.routerStore.history.listen(route => {
+        this.props.form.resetFields()
+    })
   }
 
   submit = (e?: React.FormEvent<any>): void => {
@@ -72,7 +98,7 @@ class EndcardSearch extends ComponentExt<IStoreProps & FormComponentProps> {
             <FormItem label="App ID">
               {getFieldDecorator('app_id', {
                 initialValue: filters.app_id
-              })(<Input />)}
+              })(<Input autoComplete="off" />)}
             </FormItem>
           </Col>
           <Col span={span}>

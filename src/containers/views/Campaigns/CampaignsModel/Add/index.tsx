@@ -12,7 +12,6 @@ const FormItem = Form.Item
 
 const DateFormat = 'YYYY-MM-DD'
 const Now = moment().format(DateFormat)
-console.log(Now)
 
 const formItemLayout = {
     labelCol: {
@@ -42,7 +41,7 @@ interface IStoreProps {
     optionListDb?: ICampaignStore.OptionListDb
     getTargetCode?: () => Promise<any>
     getCommentsGroupId?: () => Promise<any>
-    setCampaingn?:(Apps: ICampaignStore.ICampaignGroup) => void
+    setCampaingn?: (Apps: ICampaignStore.ICampainginForList) => void
     routerStore?: RouterStore
 }
 
@@ -51,12 +50,14 @@ interface IProps extends IStoreProps {
     onCancel?: () => void
     onOk?: (id: number) => void
     type?: string
+    endcards?: string[]
+    creatives?: string[]
 }
 @inject(
     (store: IStore): IProps => {
         const { campaignStore, routerStore } = store
-        const { createCampaingn,setCampaingn, modifyCampaingn, optionListDb, getTargetCode, getCommentsGroupId } = campaignStore
-        return { routerStore,setCampaingn, createCampaingn, modifyCampaingn, optionListDb, getTargetCode, getCommentsGroupId }
+        const { createCampaingn, setCampaingn, modifyCampaingn, optionListDb, getTargetCode, getCommentsGroupId } = campaignStore
+        return { routerStore, setCampaingn, createCampaingn, modifyCampaingn, optionListDb, getTargetCode, getCommentsGroupId }
     }
 )
 
@@ -76,7 +77,7 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
     private appIDIOS: any = []
 
     @observable
-    private appIdKey: string
+    private appIdKey: string = this.props.app_key || undefined
 
     @observable
     private CampaignGroup: ICampaignStore.ICampaignGroup = {}
@@ -88,12 +89,17 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
 
     @computed
     get endcards() {
-        return this.appTarget.endcards
+        return this.props.endcards || this.appTarget.endcards
     }
 
     @computed
     get creatives() {
-        return this.appTarget.creatives
+        return this.props.creatives || this.appTarget.creatives
+    }
+
+    @computed
+    get accountType() {
+        return this.appTarget.account_type
     }
 
     @computed
@@ -125,6 +131,19 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
         this.appIdKey = value
     }
 
+    @action
+    limitDecimals = (value: string | number): string => {
+        const reg = /^(\-)*(\d+)\.(\d\d).*$/
+        console.log(value)
+        if (typeof value === 'string') {
+            return !isNaN(Number(value)) ? value.replace(reg, '$1$2.$3') : ''
+        } else if (typeof value === 'number') {
+            return !isNaN(value) ? String(value).replace(reg, '$1$2.$3') : ''
+        } else {
+            return ''
+        }
+    }
+
     Cancel = () => {
         this.props.type || !this.isAdd ? this.props.onCancel() : this.props.routerStore.push('/currency')
     }
@@ -138,15 +157,19 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
             async (err, values): Promise<any> => {
                 if (!err) {
                     this.toggleLoading()
+                    const TargetCampaign = localStorage.getItem('TargetCampaign')
+                    const param = JSON.parse(TargetCampaign)
+                    const appKey = values.app_key ? values.app_key : param.app_key
                     try {
                         values = {
                             ...values,
                             'start_time': values['start_time'].format(DateFormat),
-                            'end_time': values['end_time'].format(DateFormat),
-                            'target_code': values.target_code.join(',')
+                            'end_time': values['end_time'] ? values['end_time'].format(DateFormat) : '',
+                            'target_code': values.target_code.join(','),
+                            'app_key': appKey,
+
                         }
                         if (values.id === undefined) {
-                            
                             let data = await createCampaingn({ ...values })
                             message.success(data.message)
                             routerStore.push('/campaigns')
@@ -175,9 +198,6 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
             this.appIDAndroid = res.data.android
             this.appIDIOS = res.data.ios
         })
-        /**
-         * //TOTO: id ----------------info ------------------------setTarget
-         *  */
     }
 
     @action
@@ -185,35 +205,44 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
         this.platform = value
     }
 
+    @action
+    setEndTime = (value) => {
+        const initialValue = value ? moment(value) : ''
+        this.props.form.setFieldsValue({
+            end_time: initialValue
+        })
+    }
+
     componentWillMount() {
         this.props.getTargetCode()
         this.props.getCommentsGroupId()
         this.init()
-        if(this.props.campaign) {
+        if (this.props.campaign) {
             this.getDetail()
         }
     }
     componentDidMount() {
-        console.log(this.userAppID)
+
     }
 
     render() {
         const reData = this.CampaignGroup
         const { form, optionListDb } = this.props
         const { getFieldDecorator } = form
+        let target_codeValue: (string | number)[] = []
         const {
             id = '',
             status = 'published',
             platform = 'android',
             app_key = '',
             campaign_name = '',
-            target_code = [],
+            target_code = undefined,
             bid_type = 'CPI',
             bid = '',
             total_budget = '',
-            daily_budget = '',
+            daily_budget,
             start_time = Now,
-            end_time = '2019-07-02',
+            end_time = '',
             comment_group_id = '',
             ad_type = 1,
             tracking_url = '',
@@ -223,12 +252,16 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
             default_cpm = '0.01',
             kpi = '',
         } = reData || {}
-        
+        if (target_code && reData) {
+            target_codeValue = target_code.split(',').map(ele => {
+                return (optionListDb.TargetCode.find(code => code.code2 === ele) || {}).code2
+            }).filter(ele => ele !== undefined)
+        }
         return (
             <div className='sb-form'>
                 <Form {...this.props.type ? miniLayout : formItemLayout} className={styles.currencyModal} >
                     {
-                        id  && <FormItem label="ID">
+                        id && <FormItem label="ID">
                             {getFieldDecorator('id', {
                                 initialValue: id,
                                 rules: [
@@ -237,7 +270,7 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                                     }
                                 ]
                             })(
-                                <Input disabled={true} />
+                                <Input autoComplete="off" disabled={true} />
                             )}
                         </FormItem>
                     }
@@ -290,7 +323,7 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                     }
 
                     {
-                        <FormItem label="App ID">
+                        this.isAdd && <FormItem label="App ID">
                             {getFieldDecorator('app_key', {
                                 initialValue: app_key,
                                 rules: [
@@ -321,12 +354,12 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                                     required: true, message: "Required"
                                 }
                             ]
-                        })(<Input />)}
+                        })(<Input autoComplete="off" />)}
                     </FormItem>
 
                     <FormItem label="Target Code"  >
                         {getFieldDecorator('target_code', {
-                            initialValue: target_code,
+                            initialValue: target_codeValue,
                             rules: [
                                 {
                                     required: true, message: "Required"
@@ -390,13 +423,13 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                                 {
                                     validator: (r, v, callback) => {
                                         if (v <= 0) {
-                                            callback('The Exchange Rate should be a positive integer!')
+                                            callback('The Exchange Rate should be a positive number!')
                                         }
                                         callback()
                                     }
                                 }
                             ]
-                        })(<InputNumber precision={0} />)}
+                        })(<InputNumber precision={2} formatter={this.limitDecimals} parser={this.limitDecimals} />)}
                     </FormItem>
 
                     <FormItem label="Total Budget">
@@ -410,13 +443,13 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                                 {
                                     validator: (r, v, callback) => {
                                         if (v <= 0) {
-                                            callback('The Exchange Rate should be a positive integer!')
+                                            callback('The Exchange Rate should be a positive number!')
                                         }
                                         callback()
                                     }
                                 }
                             ]
-                        })(<InputNumber />)}
+                        })(<InputNumber precision={2} formatter={this.limitDecimals} parser={this.limitDecimals} />)}
                     </FormItem>
 
                     <FormItem label="Daily Budget">
@@ -425,34 +458,31 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                             initialValue: daily_budget,
                             rules: [
                                 {
-                                    required: false, message: "Required"
-                                },
-                                {
                                     validator: (r, v, callback) => {
-                                        if (v <= 0) {
-                                            callback('The Exchange Rate should be a positive integer!')
+                                        if (v != undefined && v <= 0) {
+                                            callback('The Exchange Rate should be a positive number!')
                                         }
                                         callback()
                                     }
                                 }
                             ]
-                        })(<InputNumber />)}
+                        })(<InputNumber precision={2} formatter={this.limitDecimals} parser={this.limitDecimals} />)}
                     </FormItem>
 
                     <FormItem label="Start Time">
-                        {getFieldDecorator('start_time', 
+                        {getFieldDecorator('start_time',
                             {
                                 initialValue: moment(start_time),
                                 rules: [{ type: 'object', required: true, message: 'Please select time!' }]
                             }
-                        )(<DatePicker />)}
+                        )(<DatePicker placeholder="Select Time" />)}
                     </FormItem>
 
                     <FormItem label="End Time">
-                        {getFieldDecorator('end_time', 
+                        {getFieldDecorator('end_time',
                             {
-                                initialValue: moment(end_time),
-                                rules: [{ type: 'object', required: false}],
+                                initialValue: id && end_time ? moment(end_time) : undefined,
+                                rules: [{ type: 'object', required: false }],
                             }
                         )(<DatePicker />)}
                     </FormItem>
@@ -506,7 +536,7 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                             initialValue: tracking_url,
                             rules: [
                                 {
-                                    required: true, message: "Required"
+                                    required: this.accountType === 1, message: "Required"
                                 }
                             ]
                         })(<Input.TextArea autosize={{ minRows: 2, maxRows: 6 }} />)}
@@ -536,7 +566,7 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                                 showSearch
                                 filterOption={(input, option) => option.props.children.toString().toLowerCase().indexOf(input.toLowerCase()) >= 0}
                             >
-                                {this.creatives && this.creatives.map(c => (
+                                {this.creatives && this.creatives.filter(c => (!!c.name)).map(c => (
                                     <Select.Option key={c.id} value={c.id}>
                                         {c.name}
                                     </Select.Option>
@@ -558,11 +588,14 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                                 showSearch
                                 filterOption={(input, option) => option.props.children.toString().toLowerCase().indexOf(input.toLowerCase()) >= 0}
                             >
-                                {this.endcards && this.endcards.map(c => (
-                                    <Select.Option key={c.id} value={c.id}>
-                                        {c.name}
-                                    </Select.Option>
-                                ))}
+                                {
+                                    this.endcards && this.endcards.filter(c => (!!c.name)).map(c => (
+                                        <Select.Option key={c.id} value={c.id}>
+                                            {c.name}
+                                        </Select.Option>
+                                    ))
+                                }
+
                             </Select>
                         )}
                     </FormItem>
@@ -584,9 +617,8 @@ class CampaignsModal extends ComponentExt<IProps & FormComponentProps> {
                                     }
                                 }
                             ]
-                        })(<InputNumber disabled={id && !this.isAdd} />)}
+                        })(<InputNumber disabled={!!id} />)}
                     </FormItem>
-
                     <FormItem label="Campaign Kpi">
                         {getFieldDecorator('kpi', {
                             initialValue: kpi,

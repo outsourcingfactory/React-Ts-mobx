@@ -58,18 +58,8 @@ export class AppManageStore extends StoreExt {
         Category: [],
         Frame: [],
         Spec: [],
-        Style: [],
-        Account: [],
+        Style: []
     }
-
-    @action
-    getAccount = async () => {
-        const res = await this.api.appGroup.getAccountSource()
-        runInAction('SET', () => {
-            this.optionListDb.Account = res.data;
-        })
-    }
-
     @action
     clearCache = () => {
         let target = {}
@@ -82,7 +72,6 @@ export class AppManageStore extends StoreExt {
     @action
     getOptionListDb = async (id: number) => {
         const keys = Object.keys(this.optionListDb)
-        console.log(1231)
         const promiseAll = keys.map(key => this.api.appGroup[`get${key}`]())
         Promise.all(promiseAll).then(data => {
             const target = {}
